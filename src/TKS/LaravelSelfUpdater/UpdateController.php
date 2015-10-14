@@ -1,6 +1,8 @@
 <?php
 /**
- * Copyright (C) 2014 Valera Trubachev
+ * Copyright (C) 2015 Tobias Knipping
+ *
+ * based on th Work of Valera Trubachev
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +17,28 @@
  * limitations under the License.
  */
 
-namespace Vetruvet\LaravelSelfUpdater;
+namespace TKS\LaravelSelfUpdater;
 
-use Artisan;
-use Config;
-use Event;
-use Input;
-use Lang;
-use Mail;
-use View;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\View;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller;
 use Symfony\Component\Console\Output\StreamOutput;
 
-class UpdateController extends Controller {
-    public function triggerManualUpdate() {
+class UpdateController extends Controller
+{
+    public function triggerManualUpdate()
+    {
         return $this->doUpdate(false);
     }
 
-    public function triggerAutoUpdate() {
+    public function triggerAutoUpdate()
+    {
         if (!Input::isJson()) return '';
         if (Input::json('ref') === 'refs/heads/' . Config::get('self-updater::branch', 'master')) {
             return $this->doUpdate(true);
@@ -41,10 +46,11 @@ class UpdateController extends Controller {
         return '';
     }
 
-    protected function doUpdate($auto) {
+    protected function doUpdate($auto)
+    {
         $root = base_path();
 
-        $success     = false;
+        $success = false;
         $migrate_out = $git_pull_out = $git_log_out = $git_commit_hash = '';
 
         $error = $error_out = '';
@@ -68,7 +74,7 @@ class UpdateController extends Controller {
 
                 if ($pull_return == 0) {
                     exec('cd "' . $root . '"; git log --oneline ORIG_HEAD..;', $git_log_out);
-                    $git_log_out  = join("\n", $git_log_out);
+                    $git_log_out = join("\n", $git_log_out);
 
                     $git_commit_hash = substr(trim(`git rev-parse HEAD`), 0, Config::get('self-updater::commit_hash_length', 0));
 
@@ -97,7 +103,7 @@ class UpdateController extends Controller {
                     $error = Lang::get('self-updater::messages.error_pull_failed', array('pull_exit_code' => $pull_return));
                 }
             } else {
-                $error     = Lang::get('self-updater::messages.error_dirty_tree');
+                $error = Lang::get('self-updater::messages.error_dirty_tree');
                 $error_out = join("\n", $status_out);
             }
         }
@@ -106,15 +112,15 @@ class UpdateController extends Controller {
         if (empty($site_name)) $site_name = Input::server('SERVER_NAME');
 
         $email_data = array(
-            'site_name'       => $site_name,
-            'auto'            => $auto,
-            'success'         => $success,
+            'site_name' => $site_name,
+            'auto' => $auto,
+            'success' => $success,
             'git_commit_hash' => $git_commit_hash,
-            'git_pull_out'    => $git_pull_out,
-            'git_log_out'     => $git_log_out,
-            'migrate_out'     => $migrate_out,
-            'error'           => $error,
-            'error_out'       => $error_out,
+            'git_pull_out' => $git_pull_out,
+            'git_log_out' => $git_log_out,
+            'migrate_out' => $migrate_out,
+            'error' => $error,
+            'error_out' => $error_out,
         );
 
         $sent_email = $this->sendUpdateEmail($email_data);
@@ -128,7 +134,8 @@ class UpdateController extends Controller {
         return '';
     }
 
-    protected function sendUpdateEmail($email_data) {
+    protected function sendUpdateEmail($email_data)
+    {
         if (!Config::get('self-updater::email')) return false;
 
         $from = Config::get('self-updater::email.from.address', Config::get('mail.from.address'));
@@ -143,7 +150,7 @@ class UpdateController extends Controller {
         if (empty($from_name)) $from_name = Lang::get('self-updater::messages.from_name', array('site_name' => $email_data['site_name']));
 
         $reply_to = Config::get('self-updater::email.reply_to', $from);
-        
+
         if (is_array($subject)) {
             if (isset($subject[$email_data['success'] ? 'success' : 'error'])) {
                 $subject = $subject[$email_data['success'] ? 'success' : 'error'];
@@ -154,11 +161,12 @@ class UpdateController extends Controller {
 
         if (is_callable($subject)) {
             $subject = $subject($email_data['site_name'], $email_data['success'], $email_data['git_commit_hash']);
-        } 
+        }
 
         if (empty($subject)) {
             if ($email_data['success']) {
-                $subject = Lang::get('self-updater::messages.subject_success', array('site_name' => $email_data['site_name'], 'commit_hash' => $email_data['git_commit_hash']));
+                $subject = Lang::get('self-updater::messages.subject_success', array('site_name' => $email_data['site_name'],
+                    'commit_hash' => $email_data['git_commit_hash']));
             } else {
                 $subject = Lang::get('self-updater::messages.subject_error', array('site_name' => $email_data['site_name']));
             }

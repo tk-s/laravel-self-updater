@@ -1,6 +1,8 @@
 <?php
 /**
- * Copyright (C) 2014 Valera Trubachev
+ * Copyright (C) 2015 Tobias Knipping
+ *
+ * based on th Work of Valera Trubachev
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +15,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-namespace Vetruvet\LaravelSelfUpdater;
+namespace TKS\LaravelSelfUpdater;
 
-use Config;
-use Route;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-class SelfUpdaterServiceProvider extends ServiceProvider {
+class SelfUpdaterServiceProvider extends ServiceProvider
+{
 
     /**
      * Indicates if loading of the provider is deferred.
@@ -35,16 +39,15 @@ class SelfUpdaterServiceProvider extends ServiceProvider {
      *
      * @return void
      */
-    public function boot() {
-        $this->package('vetruvet/laravel-self-updater', 'self-updater');
-        
+    public function boot()
+    {
         Route::get(Config::get('self-updater::routes.manual', '/trigger_update'), array(
-                'before' => Config::get('self-updater::routes.manual_filter', null),
-                'uses' => 'Vetruvet\LaravelSelfUpdater\UpdateController@triggerManualUpdate',
-            ));
+            'before' => Config::get('self-updater::routes.manual_filter', null),
+            'uses' => 'TKS\LaravelSelfUpdater\UpdateController@triggerManualUpdate',
+        ));
         Route::post(Config::get('self-updater::routes.auto', '/trigger_update'), array(
-                'uses' => 'Vetruvet\LaravelSelfUpdater\UpdateController@triggerAutoUpdate',
-            ));
+            'uses' => 'TKS\LaravelSelfUpdater\UpdateController@triggerAutoUpdate',
+        ));
     }
 
     /**
@@ -52,6 +55,8 @@ class SelfUpdaterServiceProvider extends ServiceProvider {
      *
      * @return void
      */
-    public function register() { }
+    public function register()
+    {
+    }
 
 }
